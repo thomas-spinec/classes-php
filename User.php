@@ -220,17 +220,90 @@ class User {
             // requête pour récupérer les données de l'utilisateur dans la base de données
             $requete = "SELECT * FROM utilisateurs WHERE id = '$this->id'";
             $exec_requete = $this->bdd -> query($requete);
-            $reponse = $exec_requete -> fetch_all();
+            $reponse = mysqli_fetch_assoc($exec_requete);
 
             //affichage
-            var_dump($reponse);
-            foreach ($reponse as $utilisateur)
-            echo  ": ".$utilisateur."<br>";
+            ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>login</th>
+                        <th>email</th>
+                        <th>firstname</th>
+                        <th>lastname</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><?= $reponse['login']; ?></td>
+                        <td><?= $reponse['email']; ?></td>
+                        <td><?= $reponse['firstname']; ?></td>
+                        <td><?= $reponse['lastname']; ?></td>
+                    </tr>
+            </table>
+            <?php
         }
         else{
             echo "Vous n'êtes pas connecté, vous devez être connecté pour voir les informations du compte";
         }
     }
+
+        // Récupération du login
+    public function getLogin()
+    {
+        //vérification que la personne est connecté
+        if($this->isConnected()){
+            ?>
+            <p><strong>Votre login est: </strong><?= $this->login; ?></p>
+            <?php
+        }
+        else{
+            echo "Vous n'êtes pas connecté, vous devez être connecté pour voir le login du compte";
+        }
+    }
+
+        // Récupération de l'email
+    public function getEmail()
+    {
+        //vérification que la personne est connecté
+        if($this->isConnected()){
+            ?>
+            <p><strong>Votre email est: </strong><?= $this->email; ?></p>
+            <?php
+        }
+        else{
+            echo "Vous n'êtes pas connecté, vous devez être connecté pour voir l'email du compte";
+        }
+    }
+
+        // Récupération du prénom
+    public function getFirstname()
+    {
+        //vérification que la personne est connecté
+        if($this->isConnected()){
+            ?>
+            <p><strong>Votre prénom est: </strong><?= $this->firstname; ?></p>
+            <?php
+        }
+        else{
+            echo "Vous n'êtes pas connecté, vous devez être connecté pour voir le prénom du compte";
+        }
+    }
+
+        // Récupération du nom
+    public function getLastname()
+    {
+        //vérification que la personne est connecté
+        if($this->isConnected()){
+            ?>
+            <p><strong>Votre nom est: </strong><?= $this->lastname; ?></p>
+            <?php
+        }
+        else{
+            echo "Vous n'êtes pas connecté, vous devez être connecté pour voir le nom du compte";
+        }
+    }
+
 }
 
 /* *************
@@ -244,9 +317,10 @@ class User {
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Les classes (MSQLI)</title>
 </head>
 <body>
+    <h1>Test des classes avec mysqli</h1>
     <?php
         $user = new User();
 
@@ -269,16 +343,19 @@ class User {
         // echo $user->isConnected();
 
         // Test du getAllInfos
-        echo $user->getAllInfos();
+        // echo $user->getAllInfos();
 
-        echo "<br>";
-        echo $user->login;
-        echo "<br>";
-        echo $user->email;
-        echo "<br>";
-        echo $user->firstname;
-        echo "<br>";
-        echo $user->lastname;
+        // Test du getLogin
+        // echo $user->getLogin();
+
+        // Test du getEmail
+        // echo $user->getEmail();
+
+        // Test du getFirstname
+        // echo $user->getFirstname();
+
+        // Test du getLastname
+        // echo $user->getLastname();
     ?>
 </body>
 </html>
