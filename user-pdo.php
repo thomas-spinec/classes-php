@@ -28,7 +28,7 @@ class Userpdo {
             // On définit le mode d'erreur de PDO sur Exception
             $this->bdd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             //echo "Connexion réussie"; 
-        }
+        } 
         // si erreur, on capture les exceptions, s'il y en a une on affiche les infos
         catch(PDOException $e)
         {
@@ -54,17 +54,13 @@ class Userpdo {
     {
         if($login !== "" && $password !== "" && $email !=="" && $firstname !=="" && $lastname !=="" ){
             // requête
-            $requete = "SELECT * FROM utilisateurs where login = ':login' AND firstname = ':firstname' AND lastname = ':lastname'";
+            $requete = "SELECT * FROM utilisateurs where login = :login";
 
             // préparation de la requête
             $select = $this->bdd->prepare($requete);
 
             // exécution de la requête avec liaison des paramètres
-            $select-> execute(array(
-                ':login' => $login,
-                ':firstname' => $firstname,
-                ':lastname' => $lastname
-            ));
+            $select-> execute(array(':login' => $login));
 
             // récupération du tableau
             $fetch_all = $select->fetchAll();
@@ -75,7 +71,7 @@ class Userpdo {
                 $password = password_hash($password, PASSWORD_DEFAULT);
 
                 // requête pour ajouter l'utilisateur dans la base de données
-                $requete2 = "INSERT INTO utilisateurs (login, password, email, firstname, lastname) VALUES (':login', ':password', ':email', ':firstname', ':lastname')";
+                $requete2 = "INSERT INTO utilisateurs (login, password, email, firstname, lastname) VALUES (:login, :password, :email, :firstname, :lastname)";
 
                 // préparation de la requête
                 $insert = $this->bdd -> prepare($requete2);
@@ -86,8 +82,7 @@ class Userpdo {
                     ':password' => $password,
                     ':email' => $email,
                     ':firstname' => $firstname,
-                    ':lastname' => $lastname
-                ));
+                    ':lastname' => $lastname));
 
                 $error = "Inscription réussie";
                 return $error; // inscription réussie
@@ -110,7 +105,7 @@ class Userpdo {
     {
         if($login !== "" && $password !== ""){
             // requête
-            $requete = "SELECT * FROM utilisateurs where login = ':login'";
+            $requete = "SELECT * FROM utilisateurs where login = :login";
 
             // préparation de la requête
             $select = $this->bdd->prepare($requete);
@@ -123,8 +118,10 @@ class Userpdo {
 
             if(count($fetch_all) > 0){ // utilisateur existant
                 
-                // récupération du mot de passe
-                $fetch_assoc = $select->fetch(PDO::FETCH_ASSOC);
+                // récupération du mot de passe avec ASSOC
+                $select->setFetchMode(PDO::FETCH_ASSOC);
+                $select-> execute(array(':login' => $login));
+                $fetch_assoc = $select->fetch();
                 $password_hash = $fetch_assoc['password'];
 
                 if(password_verify($password, $password_hash)){
@@ -161,8 +158,8 @@ class Userpdo {
             $error = "Tous les champs ne sont pas renseignés, il faut le login et le mot de passe";
             return $error; // utilisateur ou mot de passe vide
         }
-
-        mysqli_close($this->bdd); // fermer la connexion
+        // fermer la connexion
+        $this->bdd = null;
     }
 
         // Déconnexion
@@ -196,18 +193,22 @@ class Userpdo {
         //vérification que la personne est connecté
         if($this->isConnected()){
             // requête pour supprimer l'utilisateur dans la base de données
-            $requete = "DELETE FROM utilisateurs WHERE id = '$this->id'";
-            $exec_requete = $this->bdd -> query($requete);
+            $requete = "DELETE FROM utilisateurs WHERE id = :id";
+            // préparation de la requête
+            $delete = $this->bdd->prepare($requete);
+            // exécution de la requête avec liaison des paramètres
+            $delete-> execute(array(':id' => $this->id));
+
             $this->disconnect();
             $error = "Suppression et deconnexion réussies";
             return $error; // suppression réussie
-
-            mysqli_close($this->bdd); // fermer la connexion
         }
         else{
             $error = "Vous n'êtes pas connecté, vous devez être connecté pour supprimer le compte";
             return $error; // utilisateur non connecté
         }
+        // fermer la connexion
+        $this->bdd = null;
     }
 
         // Modification
@@ -230,8 +231,17 @@ class Userpdo {
                 ];
 
                 // requête pour modifier l'utilisateur dans la base de données
-                $requete = "UPDATE utilisateurs SET login = '$login', password = '$password', email = '$email', firstname = '$firstname', lastname = '$lastname' WHERE id = '$this->id'";
-                $this->bdd -> query($requete);
+                $requete = "UPDATE utilisateurs SET login = :login, password = :password, email = :email, firstname = :firstname, lastname = :lastname WHERE id = :id";
+                // préparation de la requête
+                $update = $this->bdd->prepare($requete);
+                // exécution de la requête avec liaison des paramètres
+                $update-> execute(array(
+                    ':id' => $this->id,
+                    ':login' => $login, 
+                    ':password' => $password, 
+                    ':email' => $email, 
+                    ':firstname' => $firstname, 
+                    ':lastname' => $lastname));
 
                 $error = "Modification réussie";
                 return $error; // modification réussie
@@ -263,11 +273,6 @@ class Userpdo {
     {
         //vérification que la personne est connecté
         if($this->isConnected()){
-            // requête pour récupérer les données de l'utilisateur dans la base de données
-            $requete = "SELECT * FROM utilisateurs WHERE id = '$this->id'";
-            $exec_requete = $this->bdd -> query($requete);
-            $reponse = mysqli_fetch_assoc($exec_requete);
-
             //affichage
             ?>
             <table>
@@ -281,10 +286,10 @@ class Userpdo {
                 </thead>
                 <tbody>
                     <tr>
-                        <td><?= $reponse['login']; ?></td>
-                        <td><?= $reponse['email']; ?></td>
-                        <td><?= $reponse['firstname']; ?></td>
-                        <td><?= $reponse['lastname']; ?></td>
+                        <td><?= $this->login; ?></td>
+                        <td><?= $this->email; ?></td>
+                        <td><?= $this->firstname; ?></td>
+                        <td><?= $this->lastname; ?></td>
                     </tr>
             </table>
             <?php
@@ -363,18 +368,18 @@ class Userpdo {
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Les classes (MSQLI)</title>
+    <title>Les classes (PDO)</title>
 </head>
 <body>
-    <h1>Test des classes avec mysqli</h1>
+    <h1>Test des classes avec PDO</h1>
     <?php
-        $user = new User();
+        $user = new Userpdo();
 
         // Test du register
-        // echo $user->register('test2', 'test2', 'test2@test.com', 'prenom_test2', 'nom_test2');
+        // echo $user->register('testPDO2', 'testPDO2', 'testPDO2@test.com', 'prenom_testPDO2', 'nom_testPDO2');
 
         // Test du connect
-        // echo $user->connect('test2', 'test2');
+        // echo $user->connect('testPDO2', 'testPDO2');
 
         // Test du disconnect
         // echo $user->disconnect();
@@ -383,7 +388,7 @@ class Userpdo {
         // echo $user->delete();
 
         // Test du update
-        // echo $user->update('test2bis', 'test2bis', 'test2bis@test.com', 'prenom_test2bis', 'nom_test2_bis');
+        // echo $user->update('testPDO2bis', 'testPDO2bis', 'testPDO2bis@test.com', 'prenom_testPDO2bis', 'nom_testPDO2_bis');
 
         // Test du isConnected
         // echo $user->isConnected();
