@@ -2,21 +2,40 @@
 session_start();
 // Création des class
 
-class User {
+class Userpdo {
     /* Propriétés */
     private $id;
-    public $login;
+    private $login;
     private $password;
-    public $email;
-    public $firstname;
-    public $lastname;
+    private $email;
+    private $firstname;
+    private $lastname;
     private $bdd;
 
     /* Constructeur */
     public function __construct() 
     {
-        // connection à la BDD
-        $this->bdd = new mysqli('localhost', 'root', '', 'classes');
+        // connection à la BDD avec PDO
+        $servername = 'localhost';
+        $dbname = 'classes';
+        $db_username = 'root';
+        $db_password = '';
+
+        // essaie de connexion
+        try {
+            $this->bdd = new PDO("mysql:host=$servername;dbname=$dbname; charset=utf8", $db_username, $db_password);
+
+            // On définit le mode d'erreur de PDO sur Exception
+            $this->bdd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            //echo "Connexion réussie"; 
+        }
+        // si erreur, on capture les exceptions, s'il y en a une on affiche les infos
+        catch(PDOException $e)
+        {
+            echo "Echec de la connexion : " . $e->getMessage();
+            exit;
+        }
+
 
         // Vérification de la connexion
         if (isset($_SESSION['user'])){
@@ -33,24 +52,43 @@ class User {
         // Enregistrement
     public function register($login, $password, $email, $firstname, $lastname)
     {
-        $login = mysqli_real_escape_string($this->bdd,htmlspecialchars($login));
-        $password = mysqli_real_escape_string($this->bdd,htmlspecialchars($password));
-        $email = mysqli_real_escape_string($this->bdd,htmlspecialchars($email));
-        $firstname = mysqli_real_escape_string($this->bdd,htmlspecialchars($firstname));
-        $lastname = mysqli_real_escape_string($this->bdd,htmlspecialchars($lastname));
-
         if($login !== "" && $password !== "" && $email !=="" && $firstname !=="" && $lastname !=="" ){
-            $requete = "SELECT count(*) FROM utilisateurs where login = '$login'";
-            $exec_requete = $this->bdd -> query($requete);
-            $reponse      = mysqli_fetch_assoc($exec_requete);
-            $count = $reponse['count(*)'];
+            // requête
+            $requete = "SELECT * FROM utilisateurs where login = ':login' AND firstname = ':firstname' AND lastname = ':lastname'";
 
-            if($count==0){
+            // préparation de la requête
+            $select = $this->bdd->prepare($requete);
+
+            // exécution de la requête avec liaison des paramètres
+            $select-> execute(array(
+                ':login' => $login,
+                ':firstname' => $firstname,
+                ':lastname' => $lastname
+            ));
+
+            // récupération du tableau
+            $fetch_all = $select->fetchAll();
+
+            if(count($fetch_all) === 0){ // si = 0 --> utilisateur disponible
+
+                // hachage du mot de passe
+                $password = password_hash($password, PASSWORD_DEFAULT);
 
                 // requête pour ajouter l'utilisateur dans la base de données
-                $password = password_hash($password, PASSWORD_DEFAULT);
-                $requete2 = "INSERT INTO utilisateurs (login, password, email, firstname, lastname) VALUES ('$login', '$password', '$email', '$firstname', '$lastname')";
-                $exec_requete2 = $this->bdd -> query($requete2);
+                $requete2 = "INSERT INTO utilisateurs (login, password, email, firstname, lastname) VALUES (':login', ':password', ':email', ':firstname', ':lastname')";
+
+                // préparation de la requête
+                $insert = $this->bdd -> prepare($requete2);
+
+                // exécution de la requête avec liaison des paramètres
+                $insert-> execute(array(
+                    ':login' => $login,
+                    ':password' => $password,
+                    ':email' => $email,
+                    ':firstname' => $firstname,
+                    ':lastname' => $lastname
+                ));
+
                 $error = "Inscription réussie";
                 return $error; // inscription réussie
             }
@@ -63,44 +101,49 @@ class User {
             $error = "Tous les champs ne sont pas renseignés, il faut le login, le mot de passe, l'email, le prénom et le nom";
             return $error; // utilisateur ou mot de passe vide
         }
-
-        mysqli_close($this->bdd); // fermer la connexion
+        // fermer la connexion
+        $this->bdd = null;
     }
 
         // Connexion
     public function connect($login, $password)
     {
-        $login = mysqli_real_escape_string($this->bdd,htmlspecialchars($login));
-        $password = mysqli_real_escape_string($this->bdd,htmlspecialchars($password));
-
         if($login !== "" && $password !== ""){
-            $requete = "SELECT count(*) FROM utilisateurs where login = '$login'";
-            $exec_requete = $this->bdd -> query($requete);
-            $reponse      = mysqli_fetch_assoc($exec_requete);
-            $count = $reponse['count(*)'];
+            // requête
+            $requete = "SELECT * FROM utilisateurs where login = ':login'";
 
-            if($count!=0){
-                $requete2 = "SELECT * FROM utilisateurs where login = '$login'";
-                $exec_requete2 = $this->bdd -> query($requete2);
-                $reponse2      = mysqli_fetch_assoc($exec_requete2);
-                $password_hash = $reponse2['password'];
+            // préparation de la requête
+            $select = $this->bdd->prepare($requete);
+
+            // exécution de la requête avec liaison des paramètres
+            $select-> execute(array(':login' => $login));
+
+            // récupération du tableau
+            $fetch_all = $select->fetchAll();
+
+            if(count($fetch_all) > 0){ // utilisateur existant
+                
+                // récupération du mot de passe
+                $fetch_assoc = $select->fetch(PDO::FETCH_ASSOC);
+                $password_hash = $fetch_assoc['password'];
 
                 if(password_verify($password, $password_hash)){
                     $error = "Connexion réussie";
                     // récupération des données pour les attribuer aux attributs
-                    $this->id = $reponse2['id'];
-                    $this->login = $reponse2['login'];
-                    $this->password = $reponse2['password'];
-                    $this->email = $reponse2['email']; 
-                    $this->firstname = $reponse2['firstname'];
-                    $this->lastname = $reponse2['lastname'];
+                    $this->id = $fetch_assoc['id'];
+                    $this->login = $fetch_assoc['login'];
+                    $this->password = $fetch_assoc['password'];
+                    $this->email = $fetch_assoc['email']; 
+                    $this->firstname = $fetch_assoc['firstname'];
+                    $this->lastname = $fetch_assoc['lastname'];
+
                     $_SESSION['user']= [
-                        'id' => $reponse2['id'],
-                        'login' => $reponse2['login'],
-                        'password' => $reponse2['password'],
-                        'email' => $reponse2['email'],
-                        'firstname' => $reponse2['firstname'],
-                        'lastname' => $reponse2['lastname']
+                        'id' => $fetch_assoc['id'],
+                        'login' => $fetch_assoc['login'],
+                        'password' => $fetch_assoc['password'],
+                        'email' => $fetch_assoc['email'],
+                        'firstname' => $fetch_assoc['firstname'],
+                        'lastname' => $fetch_assoc['lastname']
                     ];
                     return $error; // connexion réussie
                 }
@@ -154,7 +197,7 @@ class User {
         if($this->isConnected()){
             // requête pour supprimer l'utilisateur dans la base de données
             $requete = "DELETE FROM utilisateurs WHERE id = '$this->id'";
-            $this->bdd -> query($requete);
+            $exec_requete = $this->bdd -> query($requete);
             $this->disconnect();
             $error = "Suppression et deconnexion réussies";
             return $error; // suppression réussie
