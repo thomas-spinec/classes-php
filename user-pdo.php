@@ -119,9 +119,8 @@ class Userpdo {
             if(count($fetch_all) > 0){ // utilisateur existant
                 
                 // récupération du mot de passe avec ASSOC
-                $select->setFetchMode(PDO::FETCH_ASSOC);
                 $select-> execute(array(':login' => $login));
-                $fetch_assoc = $select->fetch();
+                $fetch_assoc = $select->fetch(PDO::FETCH_ASSOC);
                 $password_hash = $fetch_assoc['password'];
 
                 if(password_verify($password, $password_hash)){
