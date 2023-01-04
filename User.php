@@ -175,23 +175,34 @@ class User {
             //vérification que les champs ne sont pas vides
             if($login !== "" && $password !== "" && $email !=="" && $firstname !=="" && $lastname !=="" ){
 
-                $password = password_hash($password, PASSWORD_DEFAULT);
-                // récupération des données pour les attribuer aux attributs
-                $_SESSION['user']= [
-                    'id' => $this->id,
-                    'login' => $login,
-                    'password' => $password,
-                    'email' => $email,
-                    'firstname' => $firstname,
-                    'lastname' => $lastname
-                ];
+                $requete = "SELECT count(*) FROM utilisateurs where login = '$login'";
+                $exec_requete = $this->bdd -> query($requete);
+                $reponse      = mysqli_fetch_assoc($exec_requete);
+                $count = $reponse['count(*)'];
 
-                // requête pour modifier l'utilisateur dans la base de données
-                $requete = "UPDATE utilisateurs SET login = '$login', password = '$password', email = '$email', firstname = '$firstname', lastname = '$lastname' WHERE id = '$this->id'";
-                $this->bdd -> query($requete);
+                if($count==0){
+                    $password = password_hash($password, PASSWORD_DEFAULT);
+                    // récupération des données pour les attribuer aux attributs
+                    $_SESSION['user']= [
+                        'id' => $this->id,
+                        'login' => $login,
+                        'password' => $password,
+                        'email' => $email,
+                        'firstname' => $firstname,
+                        'lastname' => $lastname
+                    ];
 
-                $error = "Modification réussie";
-                return $error; // modification réussie
+                    // requête pour modifier l'utilisateur dans la base de données
+                    $requete2 = "UPDATE utilisateurs SET login = '$login', password = '$password', email = '$email', firstname = '$firstname', lastname = '$lastname' WHERE id = '$this->id'";
+                    $this->bdd -> query($requete2);
+
+                    $error = "Modification réussie";
+                    return $error; // modification réussie
+                }
+                else{
+                    $error = "Le login existe déjà";
+                    return $error; // login déjà existant
+                }
             }
             else{
                 $error = "Tous les champs ne sont pas renseignés, il faut le login, le mot de passe, l'email, le prénom et le nom";
