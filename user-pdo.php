@@ -219,31 +219,50 @@ class Userpdo {
             if($login !== "" && $password !== "" && $email !=="" && $firstname !=="" && $lastname !=="" ){
 
                 $password = password_hash($password, PASSWORD_DEFAULT);
-                // récupération des données pour les attribuer aux attributs
-                $_SESSION['user']= [
-                    'id' => $this->id,
-                    'login' => $login,
-                    'password' => $password,
-                    'email' => $email,
-                    'firstname' => $firstname,
-                    'lastname' => $lastname
-                ];
 
-                // requête pour modifier l'utilisateur dans la base de données
-                $requete = "UPDATE utilisateurs SET login = :login, password = :password, email = :email, firstname = :firstname, lastname = :lastname WHERE id = :id";
+                // requête pour vérifier que le login choisi n'est pas déjà utilisé
+                $requete = "SELECT * FROM utilisateurs where login = :login";
+
                 // préparation de la requête
-                $update = $this->bdd->prepare($requete);
-                // exécution de la requête avec liaison des paramètres
-                $update-> execute(array(
-                    ':id' => $this->id,
-                    ':login' => $login, 
-                    ':password' => $password, 
-                    ':email' => $email, 
-                    ':firstname' => $firstname, 
-                    ':lastname' => $lastname));
+                $select = $this->bdd->prepare($requete);
 
-                $error = "Modification réussie";
-                return $error; // modification réussie
+                // exécution de la requête avec liaison des paramètres
+                $select-> execute(array(':login' => $login));
+
+                // récupération du tableau
+                $fetch_all = $select->fetchAll();
+
+                if(count($fetch_all) === 0){ // login disponible
+                    // récupération des données pour les attribuer aux attributs
+                    $_SESSION['user']= [
+                        'id' => $this->id,
+                        'login' => $login,
+                        'password' => $password,
+                        'email' => $email,
+                        'firstname' => $firstname,
+                        'lastname' => $lastname
+                    ];
+
+                    // requête pour modifier l'utilisateur dans la base de données
+                    $requete2 = "UPDATE utilisateurs SET login = :login, password = :password, email = :email, firstname = :firstname, lastname = :lastname WHERE id = :id";
+                    // préparation de la requête
+                    $update = $this->bdd->prepare($requete2);
+                    // exécution de la requête avec liaison des paramètres
+                    $update-> execute(array(
+                        ':id' => $this->id,
+                        ':login' => $login, 
+                        ':password' => $password, 
+                        ':email' => $email, 
+                        ':firstname' => $firstname, 
+                        ':lastname' => $lastname));
+
+                    $error = "Modification réussie";
+                    return $error; // modification réussie
+                }
+                else{
+                    $error = "Le login choisi n'est pas disponible";
+                    return $error; // login indisponible
+                }
             }
             else{
                 $error = "Tous les champs ne sont pas renseignés, il faut le login, le mot de passe, l'email, le prénom et le nom";
