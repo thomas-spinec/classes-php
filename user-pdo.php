@@ -103,59 +103,65 @@ class Userpdo {
         // Connexion
     public function connect($login, $password)
     {
-        if($login !== "" && $password !== ""){
-            // requête
-            $requete = "SELECT * FROM utilisateurs where login = :login";
+        if($this->isConnected()){
+            if($login !== "" && $password !== ""){
+                // requête
+                $requete = "SELECT * FROM utilisateurs where login = :login";
 
-            // préparation de la requête
-            $select = $this->bdd->prepare($requete);
+                // préparation de la requête
+                $select = $this->bdd->prepare($requete);
 
-            // exécution de la requête avec liaison des paramètres
-            $select-> execute(array(':login' => $login));
-
-            // récupération du tableau
-            $fetch_all = $select->fetchAll();
-
-            if(count($fetch_all) > 0){ // utilisateur existant
-                
-                // récupération du mot de passe avec ASSOC
+                // exécution de la requête avec liaison des paramètres
                 $select-> execute(array(':login' => $login));
-                $fetch_assoc = $select->fetch(PDO::FETCH_ASSOC);
-                $password_hash = $fetch_assoc['password'];
 
-                if(password_verify($password, $password_hash)){
-                    $error = "Connexion réussie";
-                    // récupération des données pour les attribuer aux attributs
-                    $this->id = $fetch_assoc['id'];
-                    $this->login = $fetch_assoc['login'];
-                    $this->password = $fetch_assoc['password'];
-                    $this->email = $fetch_assoc['email']; 
-                    $this->firstname = $fetch_assoc['firstname'];
-                    $this->lastname = $fetch_assoc['lastname'];
+                // récupération du tableau
+                $fetch_all = $select->fetchAll();
 
-                    $_SESSION['user']= [
-                        'id' => $fetch_assoc['id'],
-                        'login' => $fetch_assoc['login'],
-                        'password' => $fetch_assoc['password'],
-                        'email' => $fetch_assoc['email'],
-                        'firstname' => $fetch_assoc['firstname'],
-                        'lastname' => $fetch_assoc['lastname']
-                    ];
-                    return $error; // connexion réussie
+                if(count($fetch_all) > 0){ // utilisateur existant
+                    
+                    // récupération du mot de passe avec ASSOC
+                    $select-> execute(array(':login' => $login));
+                    $fetch_assoc = $select->fetch(PDO::FETCH_ASSOC);
+                    $password_hash = $fetch_assoc['password'];
+
+                    if(password_verify($password, $password_hash)){
+                        $error = "Connexion réussie";
+                        // récupération des données pour les attribuer aux attributs
+                        $this->id = $fetch_assoc['id'];
+                        $this->login = $fetch_assoc['login'];
+                        $this->password = $fetch_assoc['password'];
+                        $this->email = $fetch_assoc['email']; 
+                        $this->firstname = $fetch_assoc['firstname'];
+                        $this->lastname = $fetch_assoc['lastname'];
+
+                        $_SESSION['user']= [
+                            'id' => $fetch_assoc['id'],
+                            'login' => $fetch_assoc['login'],
+                            'password' => $fetch_assoc['password'],
+                            'email' => $fetch_assoc['email'],
+                            'firstname' => $fetch_assoc['firstname'],
+                            'lastname' => $fetch_assoc['lastname']
+                        ];
+                        return $error; // connexion réussie
+                    }
+                    else{
+                        $error = "Mot de passe incorrect";
+                        return $error; // mot de passe incorrect
+                    }
                 }
                 else{
-                    $error = "Mot de passe incorrect";
-                    return $error; // mot de passe incorrect
+                    $error = "Utilisateur inexistant";
+                    return $error; // utilisateur inexistant
                 }
             }
             else{
-                $error = "Utilisateur inexistant";
-                return $error; // utilisateur inexistant
+                $error = "Tous les champs ne sont pas renseignés, il faut le login et le mot de passe";
+                return $error; // utilisateur ou mot de passe vide
             }
         }
         else{
-            $error = "Tous les champs ne sont pas renseignés, il faut le login et le mot de passe";
-            return $error; // utilisateur ou mot de passe vide
+            $error = "Un utilisateur est déjà connecté";
+            return $error; // vous êtes déjà connecté
         }
         // fermer la connexion
         $this->bdd = null;

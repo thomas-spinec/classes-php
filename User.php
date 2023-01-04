@@ -70,53 +70,59 @@ class User {
         // Connexion
     public function connect($login, $password)
     {
-        $login = mysqli_real_escape_string($this->bdd,htmlspecialchars($login));
-        $password = mysqli_real_escape_string($this->bdd,htmlspecialchars($password));
+        if($this->isConnected()){
+            $login = mysqli_real_escape_string($this->bdd,htmlspecialchars($login));
+            $password = mysqli_real_escape_string($this->bdd,htmlspecialchars($password));
 
-        if($login !== "" && $password !== ""){
-            $requete = "SELECT count(*) FROM utilisateurs where login = '$login'";
-            $exec_requete = $this->bdd -> query($requete);
-            $reponse      = mysqli_fetch_assoc($exec_requete);
-            $count = $reponse['count(*)'];
+            if($login !== "" && $password !== ""){
+                $requete = "SELECT count(*) FROM utilisateurs where login = '$login'";
+                $exec_requete = $this->bdd -> query($requete);
+                $reponse      = mysqli_fetch_assoc($exec_requete);
+                $count = $reponse['count(*)'];
 
-            if($count!=0){
-                $requete2 = "SELECT * FROM utilisateurs where login = '$login'";
-                $exec_requete2 = $this->bdd -> query($requete2);
-                $reponse2      = mysqli_fetch_assoc($exec_requete2);
-                $password_hash = $reponse2['password'];
+                if($count!=0){
+                    $requete2 = "SELECT * FROM utilisateurs where login = '$login'";
+                    $exec_requete2 = $this->bdd -> query($requete2);
+                    $reponse2      = mysqli_fetch_assoc($exec_requete2);
+                    $password_hash = $reponse2['password'];
 
-                if(password_verify($password, $password_hash)){
-                    $error = "Connexion réussie";
-                    // récupération des données pour les attribuer aux attributs
-                    $this->id = $reponse2['id'];
-                    $this->login = $reponse2['login'];
-                    $this->password = $reponse2['password'];
-                    $this->email = $reponse2['email']; 
-                    $this->firstname = $reponse2['firstname'];
-                    $this->lastname = $reponse2['lastname'];
-                    $_SESSION['user']= [
-                        'id' => $reponse2['id'],
-                        'login' => $reponse2['login'],
-                        'password' => $reponse2['password'],
-                        'email' => $reponse2['email'],
-                        'firstname' => $reponse2['firstname'],
-                        'lastname' => $reponse2['lastname']
-                    ];
-                    return $error; // connexion réussie
+                    if(password_verify($password, $password_hash)){
+                        $error = "Connexion réussie";
+                        // récupération des données pour les attribuer aux attributs
+                        $this->id = $reponse2['id'];
+                        $this->login = $reponse2['login'];
+                        $this->password = $reponse2['password'];
+                        $this->email = $reponse2['email']; 
+                        $this->firstname = $reponse2['firstname'];
+                        $this->lastname = $reponse2['lastname'];
+                        $_SESSION['user']= [
+                            'id' => $reponse2['id'],
+                            'login' => $reponse2['login'],
+                            'password' => $reponse2['password'],
+                            'email' => $reponse2['email'],
+                            'firstname' => $reponse2['firstname'],
+                            'lastname' => $reponse2['lastname']
+                        ];
+                        return $error; // connexion réussie
+                    }
+                    else{
+                        $error = "Mot de passe incorrect";
+                        return $error; // mot de passe incorrect
+                    }
                 }
                 else{
-                    $error = "Mot de passe incorrect";
-                    return $error; // mot de passe incorrect
+                    $error = "Utilisateur inexistant";
+                    return $error; // utilisateur inexistant
                 }
             }
             else{
-                $error = "Utilisateur inexistant";
-                return $error; // utilisateur inexistant
+                $error = "Tous les champs ne sont pas renseignés, il faut le login et le mot de passe";
+                return $error; // utilisateur ou mot de passe vide
             }
         }
         else{
-            $error = "Tous les champs ne sont pas renseignés, il faut le login et le mot de passe";
-            return $error; // utilisateur ou mot de passe vide
+            $error = "Un utilisateur est déjà connecté";
+            return $error; // vous êtes déjà connecté
         }
 
         mysqli_close($this->bdd); // fermer la connexion
