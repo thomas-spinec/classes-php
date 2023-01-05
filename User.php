@@ -70,7 +70,7 @@ class User {
         // Connexion
     public function connect($login, $password)
     {
-        if($this->isConnected()){
+        if(!$this->isConnected()){
             $login = mysqli_real_escape_string($this->bdd,htmlspecialchars($login));
             $password = mysqli_real_escape_string($this->bdd,htmlspecialchars($password));
 

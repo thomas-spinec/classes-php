@@ -103,7 +103,7 @@ class Userpdo {
         // Connexion
     public function connect($login, $password)
     {
-        if($this->isConnected()){
+        if(!$this->isConnected()){
             if($login !== "" && $password !== ""){
                 // requête
                 $requete = "SELECT * FROM utilisateurs where login = :login";
@@ -403,7 +403,7 @@ class Userpdo {
         // echo $user->register('testPDO2', 'testPDO2', 'testPDO2@test.com', 'prenom_testPDO2', 'nom_testPDO2');
 
         // Test du connect
-        // echo $user->connect('testPDO2', 'testPDO2');
+        echo $user->connect('testPDO2bis', 'testPDO2bis');
 
         // Test du disconnect
         // echo $user->disconnect();
